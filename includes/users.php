@@ -37,6 +37,28 @@ class User{
 
     }
 
+    //Login
+    public function login($username,$password){
+        $query ='SELECT  user_id, username, email, password_hash FROM ' . $this->table . ' WHERE username = ?';
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param('s',$username);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row= $result->fetch_assoc();
+
+        if(!$row){
+            return false;
+        }
+
+        if(!password_verify($password,$row['password_hash'])){
+            return false;
+        }
+
+        unset($row['password_hash']);
+        return $row;
+
+    }
+
 }
 
 ?>
