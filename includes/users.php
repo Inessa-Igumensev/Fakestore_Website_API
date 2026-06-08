@@ -1,6 +1,7 @@
-<?php 
+<?php
 
-class User{
+class User
+{
     private $conn;
     private $table = "users";
 
@@ -10,55 +11,126 @@ class User{
     }
 
     //Alle Users anzeigen
-    public function getUsers(){
+    public function getUsers()
+    {
         $query = 'SELECT user_id, username, email, firstname, surname FROM ' . $this->table;
         $result = $this->conn->query($query);
         return $result->fetch_all(MYSQLI_ASSOC);
     }
 
     // Einen User durch die ID anzeigen
-    public function getUserId($id){
+    public function getUserId(int $id)
+    {
         $query = 'SELECT user_id, username, email, firstname, surname FROM ' . $this->table . ' WHERE user_id = ?';
         $stmt = $this->conn->prepare($query);
-        $stmt->bind_param('i',$id);
+        $stmt->bind_param('i', $id);
         $stmt->execute();
         $result = $stmt->get_result();
         return $result->fetch_assoc();
     }
 
     //Einen User erstellen
-    public function createUser($username,$email,$password,$firstname,$surname){
+    public function createUser(string $username, string $email, string $password, string $firstname, string $surname)
+    {
+        if (
+            empty(trim($username)) ||
+            empty(trim($email)) ||
+            empty(trim($password)) ||
+            empty(trim($firstname)) ||
+            empty(trim($surname))
+        ) {
+            return [
+                "success" => false,
+                "message" => "Bitte alle Pflichtfelder ausfüllen."
+            ];
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return [
+                "success" => false,
+                "message" => "Bitte eine gültige E-Mail-Adresse eingeben."
+            ];
+        }
+
+        if (strlen($password) < 8) {
+            return [
+                "success" => false,
+                "message" => "Das Passwort muss mindestens 8 Zeichen lang sein."
+            ];
+        }
+
         $hash = password_hash($password, PASSWORD_DEFAULT);
         $query = 'INSERT INTO ' . $this->table . '(username,email,password_hash,firstname,surname) VALUES (?,?,?,?,?)';
         $stmt = $this->conn->prepare($query);
-        $stmt->bind_param('sssss',$username,$email,$hash,$firstname,$surname);
-        $stmt->execute();
-        return $stmt;
+        $stmt->bind_param('sssss', $username, $email, $hash, $firstname, $surname);
 
+        if ($stmt->execute()) {
+            return [
+                "success" => true,
+                "message" => "User wurde erfolgreich erstellt.",
+                "user_id" => $stmt->insert_id
+            ];
+        }
+
+        return [
+            "success" => false,
+            "message" => "User konnte nicht erstellt werden."
+        ];
     }
 
     //Login
-    public function login($username,$password){
-        $query ='SELECT  user_id, username, email, password_hash FROM ' . $this->table . ' WHERE username = ?';
-        $stmt = $this->conn->prepare($query);
-        $stmt->bind_param('s',$username);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $row= $result->fetch_assoc();
-
-        if(!$row){
-            return false;
+    public function login(string $username, string $password)
+    {
+        $query = 'SELECT  user_id, username, email, password_hash FROM ' . $this->table . ' WHERE username = ?';
+        if (empty(trim($username)) || empty(trim($password))) {
+            return [
+                "success" => false,
+                "message" => "Bitte Benutzername und Passwort eingeben."
+            ];
         }
 
-        if(!password_verify($password,$row['password_hash'])){
-            return false;
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param('s', $username);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+
+        if (!$row) {
+            return [
+                "success" => false,
+                "message" => "Benutzername oder Passwort ist falsch."
+            ];
+        }
+
+        if (!password_verify($password, $row['password_hash'])) {
+            return [
+                "success" => false,
+                "message" => "Benutzername oder Passwort ist falsch."
+            ];
         }
 
         unset($row['password_hash']);
-        return $row;
 
+        return [
+            "success" => true,
+            "message" => "Login erfolgreich.",
+            "user" => $row
+        ];
     }
 
-}
+    //Update User
+    public function update_user(string $username, string $email, string $password, string $firstname, string $surname, int $user_id){
+        $query = 'UPDATE'. $this->table . " SET username = ? ,email = ? ,password_hash = ?, firstname = ?, surname = ? WHERE user_id =?";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param("sssssi", $username, $email,$password, $firstname, $surname,$user_id);
+        return $stmt->execute();
+    }
 
-?>
+    //Delete User
+    public function delete_user(int $user_id){
+        $query = "DELETE FROM " . $this->table . " WHERE uder_id=?";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param("i", $user_id);
+        return $stmt->execute();
+    }
+}
