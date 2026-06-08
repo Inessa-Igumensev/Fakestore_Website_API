@@ -120,7 +120,7 @@ class User
 
     //Update User
     public function update_user(string $username, string $email, string $password, string $firstname, string $surname, int $user_id){
-        $query = 'UPDATE'. $this->table . " SET username = ? ,email = ? ,password_hash = ?, firstname = ?, surname = ? WHERE user_id =?";
+        $query = 'UPDATE '. $this->table . " SET username = ? ,email = ? ,password_hash = ?, firstname = ?, surname = ? WHERE user_id =?";
         $stmt = $this->conn->prepare($query);
         $stmt->bind_param("sssssi", $username, $email,$password, $firstname, $surname,$user_id);
         return $stmt->execute();
@@ -128,7 +128,7 @@ class User
 
     //Delete User
     public function delete_user(int $user_id){
-        $query = "DELETE FROM " . $this->table . " WHERE uder_id=?";
+        $query = "DELETE FROM " . $this->table . " WHERE user_id=?";
         $stmt = $this->conn->prepare($query);
         $stmt->bind_param("i", $user_id);
         return $stmt->execute();

@@ -40,19 +40,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     $data = json_decode(file_get_contents("php://input"), true);
 
+    if (!is_array($data)) {
+        http_response_code(400);
+        echo json_encode(["error" => "Ungültiges JSON"]);
+        exit;
+    }
+
     if (!isset($data['username'], $data['email'], $data['password'], $data['firstname'], $data['surname'])) {
         http_response_code(400);
         echo json_encode(["error" => "Fehlende Felder"]);
         exit;
     }
 
-    $newId = $user->createUser(
-        $data['username'],
-        $data['email'],
-        $data['password'],
-        $data['firstname'],
-        $data['surname']
-    );
+    try {
+        $result = $user->createUser(
+            $data['username'],
+            $data['email'],
+            $data['password'],
+            $data['firstname'],
+            $data['surname']
+        );
+
+        if ($result["success"]) {
+            http_response_code(201);
+        } else {
+            http_response_code(400);
+        }
+
+        echo json_encode($result);
+        exit;
+    } catch (Throwable $e) {
+        error_log("POST /users.php Fehler: " . $e->getMessage());
+
+        http_response_code(500);
+        echo json_encode([
+            "error" => "Interner Serverfehler"
+        ]);
+        exit;
+    }
 } elseif ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
 
     if (!isset($_GET['id'])) {
@@ -72,20 +97,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 } elseif ($_SERVER["REQUEST_METHOD"] === "PUT") {
     $data = json_decode(file_get_contents("php://input"), true);
 
-    if (!isset($data['user_id'], $data['username'], $data['email'], $data['password_hash'], $data['firstname'], $data['surname'])) {
+    if (!isset($data['user_id'], $data['username'], $data['email'], $data['password'], $data['firstname'], $data['surname'])) {
         http_response_code(400);
         echo json_encode(["error" => "Fehlende Felder"]);
         exit;
     }
 
-    $success = $user-> update_user(
-        (int)$data["user_id"],
+    $success = $user->update_user(
         $data["username"],
         $data["email"],
-        $data["password_hash"],
-        $data['firstname'],
+        $data["password"],
+        $data["firstname"],
         $data["surname"],
+        (int)$data["user_id"]
     );
+
     if ($success) {
         echo json_encode(["message" => "User wurde aktualisiert"]);
     } else {
