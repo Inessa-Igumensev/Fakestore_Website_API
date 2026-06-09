@@ -81,22 +81,25 @@ class User
     //Login
     public function login(string $username, string $password)
     {
-        $query = 'SELECT  user_id, username, email, role,password_hash FROM ' . $this->table . ' WHERE username = ?';
+
         if (empty(trim($username)) || empty(trim($password))) {
             return [
                 "success" => false,
                 "message" => "Bitte Benutzername und Passwort eingeben."
             ];
         }
-
+        $query = 'SELECT  user_id, username, email, role,password_hash FROM ' . $this->table . ' WHERE username = ?';
         $stmt = $this->conn->prepare($query);
         $stmt->bind_param('s', $username);
         $stmt->execute();
         $result = $stmt->get_result();
         $row = $result->fetch_assoc();
 
-        if (!$row || !password_verify($password, $row['passwor
-d_hash'])) {
+        if (!$row) {
+            return false;
+        }
+
+        if (!password_verify($password, $row['password_hash'])) {
             return false;
         }
 
@@ -108,9 +111,10 @@ d_hash'])) {
     //Update User
     public function update_user(string $username, string $email, string $password, string $firstname, string $surname, int $user_id)
     {
+         $hash = password_hash($password, PASSWORD_DEFAULT);
         $query = 'UPDATE ' . $this->table . " SET username = ? ,email = ? ,password_hash = ?, firstname = ?, surname = ? WHERE user_id =?";
         $stmt = $this->conn->prepare($query);
-        $stmt->bind_param("sssssi", $username, $email, $password, $firstname, $surname, $user_id);
+        $stmt->bind_param("sssssi", $username, $email, $hash, $firstname, $surname, $user_id);
         return $stmt->execute();
     }
 
