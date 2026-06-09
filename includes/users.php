@@ -81,7 +81,7 @@ class User
     //Login
     public function login(string $username, string $password)
     {
-        $query = 'SELECT  user_id, username, email, password_hash FROM ' . $this->table . ' WHERE username = ?';
+        $query = 'SELECT  user_id, username, email, role,password_hash FROM ' . $this->table . ' WHERE username = ?';
         if (empty(trim($username)) || empty(trim($password))) {
             return [
                 "success" => false,
@@ -95,39 +95,28 @@ class User
         $result = $stmt->get_result();
         $row = $result->fetch_assoc();
 
-        if (!$row) {
-            return [
-                "success" => false,
-                "message" => "Benutzername oder Passwort ist falsch."
-            ];
-        }
-
-        if (!password_verify($password, $row['password_hash'])) {
-            return [
-                "success" => false,
-                "message" => "Benutzername oder Passwort ist falsch."
-            ];
+        if (!$row || !password_verify($password, $row['passwor
+d_hash'])) {
+            return false;
         }
 
         unset($row['password_hash']);
 
-        return [
-            "success" => true,
-            "message" => "Login erfolgreich.",
-            "user" => $row
-        ];
+        return $row;
     }
 
     //Update User
-    public function update_user(string $username, string $email, string $password, string $firstname, string $surname, int $user_id){
-        $query = 'UPDATE '. $this->table . " SET username = ? ,email = ? ,password_hash = ?, firstname = ?, surname = ? WHERE user_id =?";
+    public function update_user(string $username, string $email, string $password, string $firstname, string $surname, int $user_id)
+    {
+        $query = 'UPDATE ' . $this->table . " SET username = ? ,email = ? ,password_hash = ?, firstname = ?, surname = ? WHERE user_id =?";
         $stmt = $this->conn->prepare($query);
-        $stmt->bind_param("sssssi", $username, $email,$password, $firstname, $surname,$user_id);
+        $stmt->bind_param("sssssi", $username, $email, $password, $firstname, $surname, $user_id);
         return $stmt->execute();
     }
 
     //Delete User
-    public function delete_user(int $user_id){
+    public function delete_user(int $user_id)
+    {
         $query = "DELETE FROM " . $this->table . " WHERE user_id=?";
         $stmt = $this->conn->prepare($query);
         $stmt->bind_param("i", $user_id);

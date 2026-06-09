@@ -1,8 +1,9 @@
 <?php 
 
-include_once 'config/database.php';
-include 'lib/jwt.php';
-include_once 'includes/users.php';
+
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/users.php';
+require_once __DIR__ . '/../lib/jwt.php';
 
 //CORS
 header("Content-Type: application/json; charset=UTF-8");
