@@ -22,6 +22,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if (isset($_GET['label'])) {
         $result = $products->get_one_products($_GET['label']);
         echo json_encode($result);
+    } elseif (isset($_GET['category'])) {
+        $result = $products->get_product_by_category($_GET['category']);
+        echo json_encode($result);
     } else {
         $result = $products->get_products();
         echo json_encode($result);
@@ -66,9 +69,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         http_response_code(500);
         echo json_encode(["error" => "Produkt konnte nicht gelöscht werden"]);
     }
-
-}elseif ($_SERVER['REQUEST_METHOD'] === 'PUT'){
- $data = json_decode(file_get_contents("php://input"), true);
+} elseif ($_SERVER['REQUEST_METHOD'] === 'PUT') {
+    $data = json_decode(file_get_contents("php://input"), true);
 
     if (
         !isset(
@@ -103,4 +105,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         echo json_encode(["error" => "Produkt konnte nicht aktualisiert werden"]);
     }
 }
-

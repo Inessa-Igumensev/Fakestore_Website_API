@@ -34,7 +34,7 @@ class Products
         return $stmt;
     }
 
-    //Ein Product finden 
+    //Produkt suche mit dem Namen
     public function get_one_products(string $label)
     {
         $query = 'SELECT product_id, category, label, description, stock, price, image FROM ' . $this->table . ' WHERE label LIKE ?';
@@ -44,7 +44,22 @@ class Products
         $stmt->execute();
         $result = $stmt->get_result();
         $products = [];
+        while ($row = $result->fetch_assoc()) {
+            $products[] = $row;
+        }
 
+        return $products;
+    }
+
+    //alle Produkte anzeigen einer Kategorie
+    public function get_product_by_category(string $category)
+    {
+        $query = 'SELECT product_id, category, label, description, stock, price, image FROM ' . $this->table . ' WHERE category = ?';
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param('s', $category);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $products = [];
         while ($row = $result->fetch_assoc()) {
             $products[] = $row;
         }
