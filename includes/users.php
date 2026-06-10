@@ -1,4 +1,6 @@
+
 <?php
+require_once __DIR__ . '/../lib/jwt.php';
 
 class User
 {
@@ -13,7 +15,7 @@ class User
     //Alle Users anzeigen
     public function getUsers()
     {
-        $query = 'SELECT user_id, username, email, firstname, surname FROM ' . $this->table;
+        $query = 'SELECT user_id, username, email, firstname, surname, street, postal_code, country, created_at, mobile, role FROM ' . $this->table;
         $result = $this->conn->query($query);
         return $result->fetch_all(MYSQLI_ASSOC);
     }
@@ -21,12 +23,17 @@ class User
     // Einen User durch die ID anzeigen
     public function getUserId(int $id)
     {
-        $query = 'SELECT user_id, username, email, firstname, surname FROM ' . $this->table . ' WHERE user_id = ?';
+        $query = 'SELECT user_id, username, email, firstname, surname, street, postal_code, country, created_at, mobile, role FROM ' . $this->table . ' WHERE user_id = ?';
         $stmt = $this->conn->prepare($query);
         $stmt->bind_param('i', $id);
         $stmt->execute();
         $result = $stmt->get_result();
         return $result->fetch_assoc();
+    }
+
+    //Jetztigen User anzeigen durch den Token
+    public function getUser(){
+        $query = ''. $this->table . '';
     }
 
     //Einen User erstellen

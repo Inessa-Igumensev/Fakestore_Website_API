@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/users.php';
+require_once __DIR__ . '/../lib/jwt.php';
 
 //CORS
 header("Content-Type: application/json; charset=UTF-8");
@@ -15,12 +16,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
+
+
 $database = new Database();
 $db = $database->getConnection();
 
 $user = new User($db);
 
+
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+
+
+
 
     if (isset($_GET['id'])) {
         $id = (int) $_GET['id'];
@@ -32,9 +39,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             http_response_code(404);
             echo json_encode(["error" => "User nicht gefunden"]);
         }
-    } else {
+    } elseif (isset($_GET['all'])) {
         $users = $user->getUsers();
         echo json_encode($users);
+    } else {
+        $headers = getallheaders();
+        $authHeader = $headers['Authorization'] ?? '';
+        $token = str_replace('Bearer ', '', $authHeader);
+        // token an den Punkten splitten -> [header, payload, signature]
+        $parts = explode('.', $token);
+        $payload = json_decode(base64UrlDecode($parts[1]), true);
+       
+        if (!isset($parts[1]) || !$payload || !isset($payload['user_id'])) {
+            http_response_code(401);
+            echo json_encode(["error" => "Nicht eingeloggt oder ungültiger Token"]);
+            exit;
+        }
+        $result = $user->getUserId($payload['user_id']);
+
+        echo json_encode($result);
     }
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
