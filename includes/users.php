@@ -32,8 +32,9 @@ class User
     }
 
     //Jetztigen User anzeigen durch den Token
-    public function getUser(){
-        $query = ''. $this->table . '';
+    public function getUser()
+    {
+        $query = '' . $this->table . '';
     }
 
     //Einen User erstellen
@@ -115,14 +116,67 @@ class User
         return $row;
     }
 
-    //Update User
-    public function update_user(string $username, string $email, string $password, string $firstname, string $surname, int $user_id)
+    //Update User teilweise
+    public function update_user(array $data, int $user_id)
     {
-         $hash = password_hash($password, PASSWORD_DEFAULT);
-        $query = 'UPDATE ' . $this->table . " SET username = ? ,email = ? ,password_hash = ?, firstname = ?, surname = ? WHERE user_id =?";
+        $allowedFields = [
+            "username" => "username",
+            "email" => "email",
+            "firstname" => "firstname",
+            "surname" => "surname",
+            "street" => "street",
+            "postal_code" => "postal_code",
+            "country" => "country",
+            "mobile" => "mobile"
+        ];
+
+        $fields = [];
+        $values = [];
+        $types = "";
+
+        foreach ($allowedFields as $inputKey => $valuename) {
+            if (array_key_exists($inputKey, $data) && trim($data[$inputKey]) != "") {
+                $fields[] = $valuename . " = ? ";
+                $values[] = $data[$inputKey];
+                $types .= "s";
+            }
+        }
+
+        if (array_key_exists("password", $data) && trim($data["password"]) != "") {
+            if (strlen($data["password"]) < 8) {
+                return [
+                    "success" => false,
+                    "message" => "Das Passwort muss mindestens 8 Zeichen lang sein."
+                ];
+            }
+
+            $fields[] = "password_hash = ?";
+            $values[] = password_hash($data["password"], PASSWORD_DEFAULT);
+            $types .= "s";
+        }
+
+        if (empty($fields)) {
+            return [
+                "success" => false,
+                "message" => "Keine gültigen Felder zum Aktualisieren gesendet."
+            ];
+        }
+
+        $values[] = $user_id;
+        $types .= "i";
+
+        $query = "UPDATE " . $this->table . " SET " . implode(", ", $fields) . " WHERE user_id = ?";
+
         $stmt = $this->conn->prepare($query);
-        $stmt->bind_param("sssssi", $username, $email, $hash, $firstname, $surname, $user_id);
-        return $stmt->execute();
+        $stmt->bind_param($types, ...$values);
+
+
+        if ($stmt->execute()) {
+            return [
+                "success" => true,
+                "message" => "User wurde aktualisiert."
+            ];
+        }
     }
 
     //Delete User
