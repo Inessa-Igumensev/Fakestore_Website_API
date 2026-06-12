@@ -31,11 +31,6 @@ class User
         return $result->fetch_assoc();
     }
 
-    //Jetztigen User anzeigen durch den Token
-    public function getUser()
-    {
-        $query = '' . $this->table . '';
-    }
 
     //Einen User erstellen
     public function createUser(string $username, string $email, string $password, string $firstname, string $surname)
@@ -180,11 +175,28 @@ class User
     }
 
     //Delete User
-    public function delete_user(int $user_id)
+    public function deleteUser(int $userId): bool
     {
-        $query = "DELETE FROM " . $this->table . " WHERE user_id=?";
+        $query = "DELETE FROM " . $this->table . " WHERE user_id = ?";
+
         $stmt = $this->conn->prepare($query);
-        $stmt->bind_param("i", $user_id);
-        return $stmt->execute();
+
+        if (!$stmt) {
+            return false;
+        }
+
+        $stmt->bind_param("i", $userId);
+
+        if (!$stmt->execute()) {
+            return false;
+        }
+
+        return $stmt->affected_rows === 1;
+    }
+
+    // Aktuell eingeloggten User löschen
+    public function deleteMyUser(int $user_id): bool
+    {
+        return $this->deleteUser($user_id);
     }
 }

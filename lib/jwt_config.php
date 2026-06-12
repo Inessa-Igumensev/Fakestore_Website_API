@@ -1,0 +1,2 @@
+<?php
+const JWT_SECRET = "ASDFJABFBAZBFZASBF";

@@ -3,75 +3,128 @@
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/users.php';
 require_once __DIR__ . '/../lib/jwt.php';
+require_once __DIR__ . '/../lib/jwt_config.php';
 
-//CORS
-header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Origin: http://localhost:5173");
-header("Access-Control-Allow-Methods: GET, POST, DELETE,PUT,PATCH, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type,Authorization");
+// CORS
+header('Content-Type: application/json; charset=UTF-8');
+header('Access-Control-Allow-Origin: http://localhost:5173');
+header('Access-Control-Allow-Methods: GET, POST, DELETE, PUT, PATCH, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
-//Preflight-Request für Cors beantowrten
+// Preflight-Request für CORS beantworten
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(204);
     exit;
 }
-
-
 
 $database = new Database();
 $db = $database->getConnection();
 
 $user = new User($db);
 
-
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-
-
-
-
     if (isset($_GET['id'])) {
         $id = (int) $_GET['id'];
+
         $result = $user->getUserId($id);
 
         if ($result) {
             echo json_encode($result);
         } else {
             http_response_code(404);
-            echo json_encode(["error" => "User nicht gefunden"]);
+
+            echo json_encode([
+                'error' => 'User nicht gefunden',
+            ]);
         }
     } elseif (isset($_GET['all'])) {
         $users = $user->getUsers();
+
         echo json_encode($users);
     } else {
         $headers = getallheaders();
         $authHeader = $headers['Authorization'] ?? '';
         $token = str_replace('Bearer ', '', $authHeader);
-        // token an den Punkten splitten -> [header, payload, signature]
-        $parts = explode('.', $token);
-        $payload = json_decode(base64UrlDecode($parts[1]), true);
 
-        if (!isset($parts[1]) || !$payload || !isset($payload['user_id'])) {
+        $payload = verifyJwt($token, JWT_SECRET);
+
+        if ($payload === false || !isset($payload['user_id'])) {
             http_response_code(401);
-            echo json_encode(["error" => "Nicht eingeloggt oder ungültiger Token"]);
+
+            echo json_encode([
+                'success' => false,
+                'error' => 'Token ist ungültig oder abgelaufen.',
+            ]);
+
             exit;
         }
-        $result = $user->getUserId($payload['user_id']);
 
-        echo json_encode($result);
+        $currentUserId = filter_var(
+            $payload['user_id'],
+            FILTER_VALIDATE_INT,
+            [
+                'options' => [
+                    'min_range' => 1,
+                ],
+            ]
+        );
+
+        if ($currentUserId === false) {
+            http_response_code(401);
+
+            echo json_encode([
+                'success' => false,
+                'error' => 'Token enthält keine gültige User-ID.',
+            ]);
+
+            exit;
+        }
+
+        $result = $user->getUserId($currentUserId);
+
+        if ($result) {
+            echo json_encode($result);
+        } else {
+            http_response_code(404);
+
+            echo json_encode([
+                'error' => 'User nicht gefunden',
+            ]);
+        }
     }
-} elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    $data = json_decode(file_get_contents("php://input"), true);
+    exit;
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $data = json_decode(
+        file_get_contents('php://input'),
+        true
+    );
 
     if (!is_array($data)) {
         http_response_code(400);
-        echo json_encode(["error" => "Ungültiges JSON"]);
+
+        echo json_encode([
+            'error' => 'Ungültiges JSON',
+        ]);
+
         exit;
     }
 
-    if (!isset($data['username'], $data['email'], $data['password'], $data['firstname'], $data['surname'])) {
+    if (
+        !isset(
+            $data['username'],
+            $data['email'],
+            $data['password'],
+            $data['firstname'],
+            $data['surname']
+        )
+    ) {
         http_response_code(400);
-        echo json_encode(["error" => "Fehlende Felder"]);
+
+        echo json_encode([
+            'error' => 'Fehlende Felder',
+        ]);
+
         exit;
     }
 
@@ -84,59 +137,228 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $data['surname']
         );
 
-        if ($result["success"]) {
+        if ($result['success']) {
             http_response_code(201);
         } else {
             http_response_code(400);
         }
 
         echo json_encode($result);
-        exit;
     } catch (Throwable $e) {
-        error_log("POST /users.php Fehler: " . $e->getMessage());
+        error_log(
+            'POST /users.php Fehler: ' . $e->getMessage()
+        );
 
         http_response_code(500);
+
         echo json_encode([
-            "error" => "Interner Serverfehler"
+            'error' => 'Interner Serverfehler',
         ]);
-        exit;
     }
+
+    exit;
 } elseif ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
+    try {
+        $headers = getallheaders();
+        $authHeader = $headers['Authorization'] ?? '';
+        $token = str_replace('Bearer ', '', $authHeader);
 
-    if (!isset($_GET['id'])) {
-        http_response_code(400);
-        echo json_encode(["error" => "User-ID fehlt"]);
-        exit;
-    }
+        $payload = verifyJwt($token, JWT_SECRET);
 
-    $success = $user->delete_user((int)$_GET['id']);
+        if ($payload === false || !isset($payload['user_id'])) {
+            http_response_code(401);
 
-    if ($success) {
-        echo json_encode(["message" => "User wurde gelöscht"]);
-    } else {
+            echo json_encode([
+                'success' => false,
+                'error' => 'Token ist ungültig oder abgelaufen.',
+            ]);
+
+            exit;
+        }
+
+        $currentUserId = filter_var(
+            $payload['user_id'],
+            FILTER_VALIDATE_INT,
+            [
+                'options' => [
+                    'min_range' => 1,
+                ],
+            ]
+        );
+
+        if ($currentUserId === false) {
+            http_response_code(401);
+
+            echo json_encode([
+                'success' => false,
+                'error' => 'Token enthält keine gültige User-ID.',
+            ]);
+
+            exit;
+        }
+
+        if (isset($_GET['id'])) {
+            if (($payload['role'] ?? '') !== 'admin') {
+                http_response_code(403);
+
+                echo json_encode([
+                    'success' => false,
+                    'error' => 'Nur Administratoren dürfen andere Benutzer löschen.',
+                ]);
+
+                exit;
+            }
+
+            $targetUserId = filter_var(
+                $_GET['id'],
+                FILTER_VALIDATE_INT,
+                [
+                    'options' => [
+                        'min_range' => 1,
+                    ],
+                ]
+            );
+
+            if ($targetUserId === false) {
+                http_response_code(400);
+
+                echo json_encode([
+                    'success' => false,
+                    'error' => 'Ungültige Benutzer-ID.',
+                ]);
+
+                exit;
+            }
+
+            $deleted = $user->deleteUser($targetUserId);
+        } else {
+            $targetUserId = $currentUserId;
+
+            $deleted = $user->deleteMyUser(
+                $currentUserId
+            );
+        }
+
+        if (!$deleted) {
+            http_response_code(404);
+
+            echo json_encode([
+                'success' => false,
+                'error' => 'Benutzer wurde nicht gefunden oder konnte nicht gelöscht werden.',
+            ]);
+
+            exit;
+        }
+
+        http_response_code(200);
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Benutzer wurde erfolgreich gelöscht.',
+            'deleted_user_id' => $targetUserId,
+        ]);
+    } catch (Throwable $error) {
+        error_log(
+            'DELETE /users.php Fehler: ' . $error->getMessage()
+        );
+
         http_response_code(500);
-        echo json_encode(["error" => "User konnte nicht gelöscht werden"]);
+
+        echo json_encode([
+            'success' => false,
+            'error' => 'Benutzer konnte nicht gelöscht werden.',
+        ]);
     }
-} elseif ($_SERVER["REQUEST_METHOD"] === "PATCH") {
+
+    exit;
+} elseif ($_SERVER['REQUEST_METHOD'] === 'PATCH') {
     $headers = getallheaders();
     $authHeader = $headers['Authorization'] ?? '';
     $token = str_replace('Bearer ', '', $authHeader);
-    // token an den Punkten splitten -> [header, payload, signature]
-    $parts = explode('.', $token);
-    $payload = json_decode(base64UrlDecode($parts[1]), true);
-    $data = json_decode(file_get_contents("php://input"), true);
 
+    $payload = verifyJwt($token, JWT_SECRET);
 
+    if ($payload === false || !isset($payload['user_id'])) {
+        http_response_code(401);
 
+        echo json_encode([
+            'success' => false,
+            'error' => 'Token ist ungültig oder abgelaufen.',
+        ]);
 
-    $success = $user->update_user($data, (int)$payload["user_id"]);
-
-    if ($success) {
-        echo json_encode(["message" => "User wurde aktualisiert"]);
-    } else {
-        http_response_code(500);
-        echo json_encode(["error" => "User konnte nicht aktualisiert werden"]);
+        exit;
     }
+
+    $currentUserId = filter_var(
+        $payload['user_id'],
+        FILTER_VALIDATE_INT,
+        [
+            'options' => [
+                'min_range' => 1,
+            ],
+        ]
+    );
+
+    if ($currentUserId === false) {
+        http_response_code(401);
+
+        echo json_encode([
+            'success' => false,
+            'error' => 'Token enthält keine gültige User-ID.',
+        ]);
+
+        exit;
+    }
+
+    $data = json_decode(
+        file_get_contents('php://input'),
+        true
+    );
+
+    if (!is_array($data)) {
+        http_response_code(400);
+
+        echo json_encode([
+            'success' => false,
+            'error' => 'Ungültiges JSON.',
+        ]);
+
+        exit;
+    }
+
+    $result = $user->update_user(
+        $data,
+        $currentUserId
+    );
+
+    if (
+        is_array($result) &&
+        ($result['success'] ?? false) === true
+    ) {
+        http_response_code(200);
+
+        echo json_encode($result);
+    } else {
+        http_response_code(400);
+
+        echo json_encode(
+            is_array($result)
+                ? $result
+                : [
+                    'success' => false,
+                    'error' => 'User konnte nicht aktualisiert werden.',
+                ]
+        );
+    }
+
+    exit;
+} else {
+    http_response_code(405);
+
+    echo json_encode([
+        'success' => false,
+        'error' => 'HTTP-Methode nicht erlaubt.',
+    ]);
 
     exit;
 }
