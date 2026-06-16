@@ -145,17 +145,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
         echo json_encode($result);
     } catch (Throwable $e) {
-        error_log(
-            'POST /users.php Fehler: ' . $e->getMessage()
-        );
-
         http_response_code(500);
 
         echo json_encode([
             'error' => 'Interner Serverfehler',
+            'details' => $e->getMessage()
         ]);
     }
-
     exit;
 } elseif ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
     try {
