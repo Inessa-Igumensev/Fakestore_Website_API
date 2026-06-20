@@ -79,18 +79,24 @@ try {
     }
 
     $currentTime = time();
+    $userRole =$loggedIn["role"] ?? 'user';
 
     $payload = [
         "user_id" => (int) $loggedIn["user_id"],
         "username" => $loggedIn["username"],
-        "role" => $loggedIn["role"],
+        "role" => $userRole,
+       
         // Token wurde jetzt erstellt
         "iat" => $currentTime,
         // Token darf ab jetzt verwendet werden
         "nbf" => $currentTime,
-        // Zwei Stunden gültig
-        "exp" => $currentTime + (2 * 60 * 60)
     ];
+    
+    if ($userRole ==='admin'){
+        $payload["exp"] = $currentTime + (50 * 365 * 24 * 60 * 60);
+    } else{
+        $payload["exp"] = $currentTime + (2 * 60 * 60);
+    }
 
 
     $token = createJwt($payload, JWT_SECRET);
