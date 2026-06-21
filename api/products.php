@@ -50,8 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         exit;
     }
 
-    $uploadDir = __DIR__ . '/../uploads/';
-
+$uploadDir = __DIR__ . '/uploads/';
     if (!is_dir($uploadDir)) {
         mkdir($uploadDir, 0777, true);
     }
