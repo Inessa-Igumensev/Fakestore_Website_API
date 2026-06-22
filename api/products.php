@@ -23,16 +23,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if (isset($_GET['label'])) {
         $result = $products->get_one_products($_GET['label']);
         echo json_encode($result);
-
     } elseif (isset($_GET['category'])) {
         $result = $products->get_product_by_category($_GET['category']);
         echo json_encode($result);
-
     } else {
         $result = $products->get_products();
         echo json_encode($result);
     }
-
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (
@@ -50,7 +47,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         exit;
     }
 
-$uploadDir = __DIR__ . '/uploads/';
+    $uploadDir = __DIR__ . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR;
+    
     if (!is_dir($uploadDir)) {
         mkdir($uploadDir, 0777, true);
     }
@@ -78,7 +76,7 @@ $uploadDir = __DIR__ . '/uploads/';
 
     $imagePath = "uploads/" . $newFileName;
 
-    $success = $products->create_products(
+    $result = $products->create_products(
         $_POST['category'],
         $_POST['label'],
         $_POST['description'],
@@ -87,17 +85,20 @@ $uploadDir = __DIR__ . '/uploads/';
         $imagePath
     );
 
-    if ($success) {
+    if ($result["success"]) {
         http_response_code(201);
         echo json_encode([
             "message" => "Produkt wurde erstellt",
+            "product_id" => $result["product_id"],
             "image" => $imagePath
         ]);
     } else {
         http_response_code(500);
-        echo json_encode(["error" => "Produkt konnte nicht erstellt werden"]);
+        echo json_encode([
+            "error" => "Produkt konnte nicht erstellt werden",
+            "details" => $result["error"]
+        ]);
     }
-
 } elseif ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
 
     if (!isset($_GET['id'])) {
@@ -114,7 +115,6 @@ $uploadDir = __DIR__ . '/uploads/';
         http_response_code(500);
         echo json_encode(["error" => "Produkt konnte nicht gelöscht werden"]);
     }
-
 } elseif ($_SERVER['REQUEST_METHOD'] === 'PUT') {
 
     $data = json_decode(file_get_contents("php://input"), true);
@@ -151,7 +151,6 @@ $uploadDir = __DIR__ . '/uploads/';
         http_response_code(500);
         echo json_encode(["error" => "Produkt konnte nicht aktualisiert werden"]);
     }
-
 } else {
     http_response_code(405);
     echo json_encode(["error" => "Methode nicht erlaubt"]);

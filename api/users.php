@@ -41,6 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $users = $user->getUsers();
 
         echo json_encode($users);
+        
     } else {
         $headers = getallheaders();
         $authHeader = $headers['Authorization'] ?? '';

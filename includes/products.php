@@ -29,9 +29,27 @@ class Products
     {
         $query = 'INSERT INTO ' . $this->table . '(category,label,description,stock,price,image) VALUES (?,?,?,?,?,?)';
         $stmt = $this->conn->prepare($query);
+
+        if (!$stmt) {
+            return [
+                "success" => false,
+                "error" => "Prepare fehlgeschlagen: " . $this->conn->error
+            ];
+        }
+
+
         $stmt->bind_param('sssids', $category, $label, $description, $stock, $price, $image);
-        $stmt->execute();
-        return $stmt;
+        if (!$stmt->execute()) {
+            return [
+                "success" => false,
+                "error" => "Execute fehlgeschlagen: " . $stmt->error
+            ];
+        }
+
+        return [
+            "success" => true,
+            "product_id" => $stmt->insert_id
+        ];
     }
 
     //Produkt suche mit dem Namen
