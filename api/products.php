@@ -57,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $tmpName = $_FILES['image']['tmp_name'];
     $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
 
-    $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+    $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp','avif'];
 
     if (!in_array($extension, $allowedExtensions)) {
         http_response_code(400);
