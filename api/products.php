@@ -23,6 +23,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if (isset($_GET['label'])) {
         $result = $products->get_one_products($_GET['label']);
         echo json_encode($result);
+    } elseif (isset($_GET['id'])) {
+        $id = (int) $_GET['id'];
+        $result = $products->get_product_by_id($id);
+        echo json_encode($result);
     } elseif (isset($_GET['category'])) {
         $result = $products->get_product_by_category($_GET['category']);
         echo json_encode($result);
@@ -48,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     $uploadDir = __DIR__ . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR;
-    
+
     if (!is_dir($uploadDir)) {
         mkdir($uploadDir, 0777, true);
     }
@@ -57,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $tmpName = $_FILES['image']['tmp_name'];
     $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
 
-    $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp','avif'];
+    $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'avif'];
 
     if (!in_array($extension, $allowedExtensions)) {
         http_response_code(400);

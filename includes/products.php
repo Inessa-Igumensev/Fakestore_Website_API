@@ -52,7 +52,7 @@ class Products
         ];
     }
 
-    //Produkt suche mit dem Namen
+    //Produkt suche/anzeigen mit dem Namen
     public function get_one_products(string $label)
     {
         $query = 'SELECT product_id, category, label, description, stock, price, image FROM ' . $this->table . ' WHERE label LIKE ?';
@@ -83,6 +83,17 @@ class Products
         }
 
         return $products;
+    }
+
+    //ein Product anzeigen mit der ID 
+    public function get_product_by_id(int $id)
+    {
+        $query = 'SELECT product_id, category, label, description, stock, price, image FROM ' . $this->table . ' WHERE category = ?';
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        return $result->fetch_assoc();
     }
 
     //Produkt Updaten
