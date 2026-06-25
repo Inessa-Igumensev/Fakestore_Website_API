@@ -88,7 +88,7 @@ class Products
     //ein Product anzeigen mit der ID 
     public function get_product_by_id(int $id)
     {
-        $query = 'SELECT product_id, category, label, description, stock, price, image FROM ' . $this->table . ' WHERE category = ?';
+        $query = 'SELECT product_id, category, label, description, stock, price, image FROM ' . $this->table . ' WHERE product_id = ?';
         $stmt = $this->conn->prepare($query);
         $stmt->bind_param('i', $id);
         $stmt->execute();
