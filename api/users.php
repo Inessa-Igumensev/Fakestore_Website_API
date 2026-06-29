@@ -268,6 +268,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     exit;
+    
 } elseif ($_SERVER['REQUEST_METHOD'] === 'PATCH') {
     $headers = getallheaders();
     $authHeader = $headers['Authorization'] ?? '';

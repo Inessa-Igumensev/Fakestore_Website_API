@@ -19,8 +19,8 @@ $db = $database->getConnection();
 $cart = new Cart($db);
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-   
-if (!isset($_GET['user_id'])) {
+
+    if (!isset($_GET['user_id'])) {
         http_response_code(400);
         echo json_encode(["error" => "User-ID fehlt"]);
         exit;
@@ -29,5 +29,61 @@ if (!isset($_GET['user_id'])) {
     $user_id = (int)$_GET["user_id"];
     $result = $cart->get_user_cart($user_id);
 
-    echo json_encode($result);
+    $total_price = 0.0;
+    if (!isset($result["error"])) {
+        foreach ($result as $item) {
+            $total_price += $item['total_price'];
+        }
+    }
+
+    echo json_encode([
+        "items" => $result,
+        "total_cart_price" => $total_price
+    ]);
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    $data = json_decode(
+        file_get_contents('php://input'),
+        true
+    );
+
+    $result = $cart->add_product_to_cart((int)$data['user_id'], (int)$data['product_id'], (int)$data['quantity']);
+
+    if ($result) {
+        echo json_encode(["message" => "Produkt erfolgreich hinzugefügt"]);
+    } else {
+        http_response_code(500);
+        echo json_encode(["error" => "Fehler beim Hinzufügen des Produkts"]);
+    }
+
+    exit;
+} elseif ($_SERVER["REQUEST_METHOD"] === "PUT") {
+    $data = json_decode(
+        file_get_contents('php://input'),
+        true
+    );
+
+    $result = $cart->update_cart((int)$data['user_id'], (int)$data['product_id'], (int)$data['quantity']);
+    if ($result) {
+        echo json_encode(["message" => "Warenkorb wurde erfolgreich aktualisiert"]);
+    } else {
+        http_response_code(500);
+        echo json_encode(["error" => "Fehler beim Aktualisieren des Warenkorbes"]);
+    }
+
+    exit;
+} elseif ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
+    $data = json_decode(
+        file_get_contents('php://input'),
+        true
+    );
+    $result = $cart->remove_product_from_cart((int)$data['user_id'], (int)$data['product_id']);
+    if ($result) {
+        echo json_encode(["message" => "Produkt erfolgreich entfernt"]);
+    } else {
+        http_response_code(500);
+        echo json_encode(["error" => "Fehler beim Entfernen des Produkts"]);
+    }
+
+    exit;
 }
