@@ -40,6 +40,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         "items" => $result,
         "total_cart_price" => $total_price
     ]);
+
+    exit;
+
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $data = json_decode(
