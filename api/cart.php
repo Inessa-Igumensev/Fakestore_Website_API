@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/cart.php';
+require_once __DIR__ . '/../lib/jwt.php';
+require_once __DIR__ . '/../lib/jwt_config.php';
 
 // CORS
 header("Content-Type: application/json; charset=UTF-8");
@@ -14,19 +16,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
+//Token auslesen und Prüfen
+$headers = getallheaders();
+$authHeader = $headers['Authorization'] ?? '';
+$token = str_replace('Bearer ', '', $authHeader);
+$payload = verifyJwt($token, JWT_SECRET);
+
+if ($payload === false) {
+    http_response_code(401);
+   echo json_encode(["error" => "Nicht autorisiert: Token ungültig oder abgelaufen"]);
+    exit;
+}
+
+// User-ID aus dem Payload sichern
+$user_id = (int) $payload["user_id"];
+
+
 $database = new Database();
 $db = $database->getConnection();
 $cart = new Cart($db);
 
+
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
-    if (!isset($_GET['user_id'])) {
-        http_response_code(400);
-        echo json_encode(["error" => "User-ID fehlt"]);
-        exit;
-    }
-
-    $user_id = (int)$_GET["user_id"];
     $result = $cart->get_user_cart($user_id);
 
     $total_price = 0.0;
@@ -42,7 +54,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     ]);
 
     exit;
-
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $data = json_decode(
