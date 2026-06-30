@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         true
     );
 
-    $result = $cart->add_product_to_cart((int)$data['user_id'], (int)$data['product_id'], (int)$data['quantity']);
+    $result = $cart->add_product_to_cart($user_id, (int)$data['product_id'], (int)$data['quantity']);
 
     if ($result) {
         echo json_encode(["message" => "Produkt erfolgreich hinzugefügt"]);
@@ -77,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         true
     );
 
-    $result = $cart->update_cart((int)$data['user_id'], (int)$data['product_id'], (int)$data['quantity']);
+    $result = $cart->update_cart($user_id, (int)$data['product_id'], (int)$data['quantity']);
     if ($result) {
         echo json_encode(["message" => "Warenkorb wurde erfolgreich aktualisiert"]);
     } else {
@@ -91,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         file_get_contents('php://input'),
         true
     );
-    $result = $cart->remove_product_from_cart((int)$data['user_id'], (int)$data['product_id']);
+    $result = $cart->remove_product_from_cart($user_id, (int)$data['product_id']);
     if ($result) {
         echo json_encode(["message" => "Produkt erfolgreich entfernt"]);
     } else {
