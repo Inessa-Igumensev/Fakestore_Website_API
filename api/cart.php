@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     echo json_encode([
         "items" => $result,
-        "total_cart_price" => $total_price
+        "total_cart_price" =>  $total_price
     ]);
 
     exit;

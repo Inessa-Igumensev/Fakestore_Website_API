@@ -40,7 +40,10 @@ class Cart
             $row['product_id'] = (int)$row['product_id'];
             $row['unit_price'] = (float)$row['unit_price'];
             $row['quantity'] = (int)$row['quantity'];
-            $row['total_price'] = (float)$row['total_item_price'];
+            $row['total_price'] = (float)$row['total_price'];
+            $row['label'] = (string)$row['label'];
+            $row['image'] = (string)$row['image'];
+            $row['category'] = (string)$row['category'];
             $cart_items[] = $row;
         }
 
