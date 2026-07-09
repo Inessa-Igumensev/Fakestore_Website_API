@@ -41,7 +41,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $users = $user->getUsers();
 
         echo json_encode($users);
-        
     } else {
         $headers = getallheaders();
         $authHeader = $headers['Authorization'] ?? '';
@@ -268,7 +267,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     exit;
-    
 } elseif ($_SERVER['REQUEST_METHOD'] === 'PATCH') {
     $headers = getallheaders();
     $authHeader = $headers['Authorization'] ?? '';
@@ -287,25 +285,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         exit;
     }
 
-    $currentUserId = filter_var(
-        $payload['user_id'],
-        FILTER_VALIDATE_INT,
-        [
-            'options' => [
-                'min_range' => 1,
-            ],
-        ]
-    );
 
-    if ($currentUserId === false) {
-        http_response_code(401);
-
-        echo json_encode([
-            'success' => false,
-            'error' => 'Token enthält keine gültige User-ID.',
-        ]);
-
-        exit;
+    if (isset($_GET['id'])) {
+        $targetUserId = filter_var($_GET['id'], FILTER_VALIDATE_INT);
+    } else {
+        $targetUserId = filter_var($payload['user_id'], FILTER_VALIDATE_INT);
     }
 
     $data = json_decode(
@@ -315,41 +299,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     if (!is_array($data)) {
         http_response_code(400);
-
-        echo json_encode([
-            'success' => false,
-            'error' => 'Ungültiges JSON.',
-        ]);
-
+        echo json_encode(['success' => false, 'error' => 'Ungültiges JSON.']);
         exit;
     }
-
-    $result = $user->update_user(
-        $data,
-        $currentUserId
-    );
-
-    if (
-        is_array($result) &&
-        ($result['success'] ?? false) === true
-    ) {
-        http_response_code(200);
-
-        echo json_encode($result);
-    } else {
-        http_response_code(400);
-
-        echo json_encode(
-            is_array($result)
-                ? $result
-                : [
-                    'success' => false,
-                    'error' => 'User konnte nicht aktualisiert werden.',
-                ]
-        );
-    }
+    $result = $user->update_user($data, $targetUserId);
 
     exit;
+    
 } else {
     http_response_code(405);
 
